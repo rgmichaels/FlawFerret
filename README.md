@@ -19,9 +19,11 @@
 ## AI Scenario Generation (Local)
 1. Install server dependencies (if not done): `npm install`.
 2. Build the extension: `npm run build`.
-3. Set your API key: `export OPENAI_API_KEY="..."`.
-4. Start the local server: `npm run ai:server`.
-5. In extension options, set **AI Server URL** to `http://localhost:8787`.
+3. Start the local server: `npm run ai:server`.
+4. In extension options, set **AI Server URL** to `http://localhost:8787`.
+5. Choose **AI Provider**:
+   - Ollama (default) with model `codellama` and URL `http://localhost:11434`.
+   - OpenAI (requires `export OPENAI_API_KEY="..."` before starting the server).
 6. Use **Generate with AI** in the overlay to create a full Scenario.
 
 ## AI Server (Docker)

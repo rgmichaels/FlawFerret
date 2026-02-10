@@ -111,6 +111,19 @@
         <label for="aiServer">AI Server URL</label>
         <input id="aiServer" placeholder="http://localhost:8787" />
 
+        <label for="aiProvider">AI Provider</label>
+        <select id="aiProvider">
+          <option value="ollama">Ollama (Local)</option>
+          <option value="openai">OpenAI</option>
+        </select>
+
+        <label for="aiModel">AI Model</label>
+        <input id="aiModel" placeholder="codellama" />
+
+        <label for="ollamaUrl">Ollama URL</label>
+        <input id="ollamaUrl" placeholder="http://localhost:11434" />
+        <div class="hint">Used only when provider is Ollama.</div>
+
         <div class="row">
           <button id="saveAi">Save</button>
           <span id="aiStatus" class="status"></span>

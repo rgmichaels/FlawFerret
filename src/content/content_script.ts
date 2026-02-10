@@ -353,10 +353,16 @@ function formatClipboard(capture: {
   selectors: SelectorCandidate[];
   warnings: string[];
 }): string {
-  return [
+  const scenario = [
     `Given I am on the "${capture.pageKey}" page`,
     buildThenLine(capture),
   ].join("\n");
+  return appendPageLine(scenario, capture.url);
+}
+
+function appendPageLine(text: string, url: string): string {
+  const trimmed = text.trim();
+  return `${trimmed}\n\nPage: ${url}`;
 }
 
 function buildStepDefinitionStub(): string {
@@ -740,8 +746,8 @@ function showOverlay(
     chrome.runtime.sendMessage({ type: "open-options" });
   });
 
-  jiraRow.appendChild(issueTypeSelect);
   jiraRow.appendChild(projectSelect);
+  jiraRow.appendChild(issueTypeSelect);
   jiraRow.appendChild(summaryInput);
   const jiraStatusWrap = document.createElement("div");
   jiraStatusWrap.style.display = "flex";
@@ -841,7 +847,7 @@ function showOverlay(
     try {
       const scenario = await generateScenario(meta, issueTypeSelect.value);
       if (scenario) {
-        textarea.value = scenario;
+        textarea.value = appendPageLine(scenario, meta.url);
         header.textContent = "AI scenario ready";
         updateCopyState();
       } else {
@@ -907,7 +913,7 @@ function showOverlay(
   jiraButton.addEventListener("click", () => {
     const projectKey = projectSelect.value;
     const summary = summaryInput.value.trim();
-    const description = `${text}\\n\\nURL: ${meta.url}`;
+    const description = textarea.value.trim();
     const mappingBlock = buildMappingBlock({
       url: meta.url,
       title: meta.title,
@@ -1109,12 +1115,18 @@ function makeDraggable(
   });
 }
 
-async function getAiServerUrl(): Promise<string> {
+type AiConfig = {
+  serverUrl?: string;
+  provider?: "openai" | "ollama";
+  model?: string;
+  ollamaUrl?: string;
+};
+
+async function getAiConfig(): Promise<AiConfig> {
   const stored = (await chrome.storage.local.get("aiConfig")) as {
-    aiConfig?: { serverUrl?: string };
+    aiConfig?: AiConfig;
   };
-  const url = stored.aiConfig?.serverUrl?.trim();
-  return url && url.length > 0 ? url : "http://localhost:8787";
+  return stored.aiConfig || {};
 }
 
 async function generateScenario(
@@ -1131,7 +1143,11 @@ async function generateScenario(
   },
   issueType: string
 ): Promise<string | null> {
-  const serverUrl = await getAiServerUrl();
+  const aiConfig = await getAiConfig();
+  const serverUrl =
+    aiConfig.serverUrl && aiConfig.serverUrl.length > 0
+      ? aiConfig.serverUrl
+      : "http://localhost:8787";
   try {
     const response = await fetch(`${serverUrl.replace(/\/+$/, "")}/generate-scenario`, {
       method: "POST",
@@ -1147,6 +1163,9 @@ async function generateScenario(
         outerHTML: meta.outerHTML,
         thenLine: meta.thenLine,
         issueType,
+        provider: aiConfig.provider || "ollama",
+        model: aiConfig.model || "codellama",
+        ollamaUrl: aiConfig.ollamaUrl || "http://localhost:11434",
       }),
     });
     if (!response.ok) return null;

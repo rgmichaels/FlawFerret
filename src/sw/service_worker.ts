@@ -185,32 +185,51 @@ async function handleJiraCreateIssue(
     ],
   };
 
-  const issueType =
-    message.issueType?.toLowerCase() === "bug" ? "Bug" : "Story";
+  const desiredType = (message.issueType || "").trim();
+  const typeCandidates =
+    desiredType.toLowerCase() === "bug"
+      ? ["Bug", "Task"]
+      : desiredType
+      ? [desiredType, "Task", "Story"]
+      : ["Task", "Story"];
 
-  const response = await fetch(`${baseUrl}/rest/api/3/issue`, {
-    method: "POST",
-    headers: {
-      Authorization: buildAuthHeader(config.email, config.token),
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      fields: {
-        project: { key: message.projectKey },
-        summary,
-        description,
-        issuetype: { name: issueType },
+  let issueKey: string | null = null;
+  let lastError = "";
+
+  for (const candidate of typeCandidates) {
+    const response = await fetch(`${baseUrl}/rest/api/3/issue`, {
+      method: "POST",
+      headers: {
+        Authorization: buildAuthHeader(config.email, config.token),
+        Accept: "application/json",
+        "Content-Type": "application/json",
       },
-    }),
-  });
+      body: JSON.stringify({
+        fields: {
+          project: { key: message.projectKey },
+          summary,
+          description,
+          issuetype: { name: candidate },
+        },
+      }),
+    });
 
-  if (!response.ok) {
-    return { ok: false, error: `Jira error (${response.status})` };
+    if (response.ok) {
+      const payload = await response.json();
+      issueKey = payload.key as string;
+      break;
+    }
+
+    const detail = await safeReadError(response);
+    lastError = `Jira error (${response.status}): ${detail}`;
+    if (!detail.includes("issuetype")) {
+      break;
+    }
   }
 
-  const payload = await response.json();
-  const issueKey = payload.key as string;
+  if (!issueKey) {
+    return { ok: false, error: lastError || "Jira error" };
+  }
 
   if (message.snapshotDataUrl) {
     const response = await fetch(message.snapshotDataUrl);
@@ -374,6 +393,21 @@ async function handleSnapshotPreview(
   const previewBlob = await canvas.convertToBlob({ type: "image/png" });
   const previewDataUrl = await blobToDataUrl(previewBlob);
   return { ok: true, dataUrl: previewDataUrl };
+}
+
+async function safeReadError(response: Response): Promise<string> {
+  try {
+    const text = await response.text();
+    if (!text) return "No details";
+    try {
+      const json = JSON.parse(text);
+      return json?.errorMessages?.join("; ") || json?.message || text;
+    } catch {
+      return text;
+    }
+  } catch {
+    return "No details";
+  }
 }
 
 async function blobToDataUrl(blob: Blob): Promise<string> {
