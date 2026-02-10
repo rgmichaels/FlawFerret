@@ -267,33 +267,51 @@ async function handleJiraCreateIssue(
     ],
   };
 
-  const issueType =
-    message.issueType?.toLowerCase() === "bug" ? "Bug" : "Task";
+  const desiredType = (message.issueType || "").trim();
+  const typeCandidates =
+    desiredType.toLowerCase() === "bug"
+      ? ["Bug", "Task"]
+      : desiredType
+      ? [desiredType, "Task", "Story"]
+      : ["Task", "Story"];
 
-  const response = await fetch(`${baseUrl}/rest/api/3/issue`, {
-    method: "POST",
-    headers: {
-      Authorization: buildAuthHeader(config.email, config.token),
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      fields: {
-        project: { key: message.projectKey },
-        summary,
-        description,
-        issuetype: { name: issueType },
+  let issueKey: string | null = null;
+  let lastError = "";
+
+  for (const candidate of typeCandidates) {
+    const response = await fetch(`${baseUrl}/rest/api/3/issue`, {
+      method: "POST",
+      headers: {
+        Authorization: buildAuthHeader(config.email, config.token),
+        Accept: "application/json",
+        "Content-Type": "application/json",
       },
-    }),
-  });
+      body: JSON.stringify({
+        fields: {
+          project: { key: message.projectKey },
+          summary,
+          description,
+          issuetype: { name: candidate },
+        },
+      }),
+    });
 
-  if (!response.ok) {
+    if (response.ok) {
+      const payload = await response.json();
+      issueKey = payload.key as string;
+      break;
+    }
+
     const detail = await safeReadError(response);
-    return { ok: false, error: `Jira error (${response.status}): ${detail}` };
+    lastError = `Jira error (${response.status}): ${detail}`;
+    if (!detail.includes("issuetype")) {
+      break;
+    }
   }
 
-  const payload = await response.json();
-  const issueKey = payload.key as string;
+  if (!issueKey) {
+    return { ok: false, error: lastError || "Jira error" };
+  }
 
   if (message.snapshotDataUrl) {
     const response = await fetch(message.snapshotDataUrl);

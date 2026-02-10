@@ -33,6 +33,9 @@ app.post("/generate-scenario", async (req, res) => {
       outerHTML,
       thenLine,
       issueType,
+      provider,
+      model: requestModel,
+      ollamaUrl,
     } = payload;
 
     const system = [
@@ -71,15 +74,39 @@ app.post("/generate-scenario", async (req, res) => {
       "For Bug, infer a likely issue from the selected text/element or leave a stub in the template.",
     ].join("\n");
 
-    const response = await client.responses.create({
-      model,
-      input: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
-    });
+    let text = "";
+    if ((provider || "openai") === "ollama") {
+      const ollamaBase = (ollamaUrl || "http://localhost:11434").replace(/\/+$/, "");
+      const ollamaModel = requestModel || "codellama";
+      const prompt = `${system}\\n\\n${user}`;
 
-    const text = response.output_text?.trim();
+      const ollamaResp = await fetch(`${ollamaBase}/api/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: ollamaModel,
+          prompt,
+          stream: false,
+        }),
+      });
+      if (!ollamaResp.ok) {
+        const detail = await ollamaResp.text();
+        res.status(500).json({ ok: false, error: detail || "Ollama error" });
+        return;
+      }
+      const data = await ollamaResp.json();
+      text = (data.response || "").trim();
+    } else {
+      const response = await client.responses.create({
+        model: requestModel || model,
+        input: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      });
+      text = response.output_text?.trim();
+    }
+
     if (!text) {
       res.status(500).json({ ok: false, error: "Empty response" });
       return;
