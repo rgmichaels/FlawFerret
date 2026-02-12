@@ -885,6 +885,7 @@ function showOverlay(text: string, meta: OverlayMeta): void {
       const scenario = await generateScenario(meta, issueTypeSelect.value);
       if (scenario) {
         textarea.value = appendPageLine(scenario, meta.url);
+        summaryInput.value = buildJiraSummaryFromScenario(scenario, meta.elementKey);
         header.textContent = "AI scenario ready";
         updateCopyState();
       } else {
@@ -1419,6 +1420,38 @@ async function generateScenario(
   } catch {
     return null;
   }
+}
+
+function buildJiraSummaryFromScenario(scenario: string, fallbackElementKey: string): string {
+  const maxLen = 240;
+  const lines = scenario
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const scenarioLine = lines.find((line) => /^scenario(?: outline)?:/i.test(line));
+  if (scenarioLine) {
+    const title = scenarioLine.replace(/^scenario(?: outline)?:\s*/i, "").trim();
+    if (title) return trimToMax(title, maxLen);
+  }
+
+  const bugSummaryLine = lines.find((line) => /^bug summary:/i.test(line));
+  if (bugSummaryLine) {
+    const summary = bugSummaryLine.replace(/^bug summary:\s*/i, "").trim();
+    if (summary) return trimToMax(summary, maxLen);
+  }
+
+  const firstMeaningful = lines.find((line) => {
+    return !/^(feature|background|given|when|then|and|but|steps to reproduce)\b/i.test(line);
+  });
+  if (firstMeaningful) return trimToMax(firstMeaningful, maxLen);
+
+  return trimToMax(`UI: ${fallbackElementKey} should be visible`, maxLen);
+}
+
+function trimToMax(value: string, maxLen: number): string {
+  if (value.length <= maxLen) return value;
+  return `${value.slice(0, maxLen - 1).trimEnd()}...`;
 }
 
 async function loadIssueTypes(
