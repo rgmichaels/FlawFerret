@@ -4,7 +4,6 @@ type JiraConfig = {
   baseUrl: string;
   email: string;
   token: string;
-  mapping: Record<string, string>;
 };
 
 let recordingState: {

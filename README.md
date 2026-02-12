@@ -13,8 +13,7 @@
 ## Jira Integration
 1. Open the extension settings: `chrome://extensions` → **Details** → **Extension options**.
 2. Enter your Jira base URL, email, and API token.
-3. Add site → project mappings (one per line, e.g. `exquisitepets.shop=KAN`).
-4. In the overlay, select a project and click **Create Jira Ticket**.
+3. In the overlay, select a project and click **Create Jira Ticket**.
 
 ## AI Scenario Generation (Local)
 1. Install server dependencies (if not done): `npm install`.
