@@ -406,16 +406,6 @@ function appendPageLine(text: string, url: string): string {
   return `${trimmed}\n\nPage: ${url}`;
 }
 
-function buildStepDefinitionStub(): string {
-  return [
-    "// Add once in your step definitions",
-    "Then('the {string} should be visible', async function (elementKey: string) {",
-    "  const locator = resolveLocator(this.page, elementKey);",
-    "  await expect(locator).toBeVisible();",
-    "});",
-  ].join("\n");
-}
-
 function buildMappingBlock(capture: {
   url: string;
   title: string;
@@ -1046,7 +1036,6 @@ function showOverlay(text: string, meta: OverlayMeta): void {
       elementKey: meta.elementKey,
       selectors: meta.selectors,
     });
-    const stepDef = buildStepDefinitionStub();
 
     if (!projectKey) {
       jiraStatus.textContent = "Choose Jira project";
@@ -1061,7 +1050,6 @@ function showOverlay(text: string, meta: OverlayMeta): void {
         projectKey,
         summary,
         description,
-        stepDef,
         mapping: mappingBlock,
         issueType: issueTypeSelect.value,
         snapshotDataUrl: meta.snapshotUrl,
