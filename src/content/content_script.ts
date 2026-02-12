@@ -999,16 +999,13 @@ function showOverlay(text: string, meta: OverlayMeta): void {
 
   makeDraggable(header, card, overlay);
 
-  void loadJiraProjects(projectSelect, jiraStatus).then((defaultKey) => {
+  void loadJiraProjects(projectSelect, jiraStatus).then(() => {
     if (meta.initialUi?.projectKey) {
       projectSelect.value = meta.initialUi.projectKey;
       void loadIssueTypes(issueTypeSelect, jiraStatus, meta.initialUi.projectKey).then(
         () => applyInitialUi()
       );
       return;
-    }
-    if (defaultKey) {
-      projectSelect.value = defaultKey;
     }
     if (projectSelect.value) {
       void loadIssueTypes(issueTypeSelect, jiraStatus, projectSelect.value).then(
@@ -1215,31 +1212,12 @@ async function initRecordingControl(): Promise<void> {
 async function loadJiraProjects(
   select: HTMLSelectElement,
   status: HTMLElement
-): Promise<string | null> {
+): Promise<void> {
   select.innerHTML = "";
   const loading = document.createElement("option");
   loading.textContent = "Loading projects...";
   loading.value = "";
   select.appendChild(loading);
-
-  const config = (await chrome.storage.local.get("jiraConfig")) as {
-    jiraConfig?: { mapping?: Record<string, string> };
-  };
-  const mapping = config.jiraConfig?.mapping || {};
-  const hostname = window.location.hostname.toLowerCase();
-  const normalizedHost = hostname.replace(/^www\./, "");
-  let defaultKey: string | null = null;
-
-  if (mapping[hostname]) {
-    defaultKey = mapping[hostname];
-  } else if (mapping[normalizedHost]) {
-    defaultKey = mapping[normalizedHost];
-  } else {
-    const match = Object.entries(mapping).find(([domain]) =>
-      normalizedHost.endsWith(domain.toLowerCase())
-    );
-    defaultKey = match ? match[1] : null;
-  }
 
   return new Promise((resolve) => {
     chrome.runtime.sendMessage({ type: "jira:list-projects" }, (response) => {
@@ -1250,7 +1228,7 @@ async function loadJiraProjects(
         option.textContent = "Configure Jira in settings";
         option.value = "";
         select.appendChild(option);
-        resolve(defaultKey);
+        resolve();
         return;
       }
       if (!response?.ok) {
@@ -1260,7 +1238,7 @@ async function loadJiraProjects(
         option.textContent = "Configure Jira in settings";
         option.value = "";
         select.appendChild(option);
-        resolve(defaultKey);
+        resolve();
         return;
       }
 
@@ -1277,22 +1255,10 @@ async function loadJiraProjects(
         option.textContent = `${project.key} — ${project.name}`;
         select.appendChild(option);
       });
-
-      if (defaultKey && !projects.some((p) => p.key === defaultKey)) {
-        const option = document.createElement("option");
-        option.value = defaultKey;
-        option.textContent = `${defaultKey} — (from mapping)`;
-        select.appendChild(option);
-      }
-
-      if (defaultKey) {
-        select.value = defaultKey;
-      } else {
-        select.value = "";
-      }
+      select.value = "";
 
       status.textContent = "";
-      resolve(defaultKey);
+      resolve();
     });
   });
 }
