@@ -6,6 +6,13 @@ type JiraConfig = {
   token: string;
 };
 
+type AiConfig = {
+  serverUrl?: string;
+  provider?: "openai" | "ollama";
+  model?: string;
+  ollamaUrl?: string;
+};
+
 let recordingState: {
   recordingActive?: boolean;
   recordingContext?: { text: string; meta: unknown } | null;
@@ -52,6 +59,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message?.type === "jira:test") {
     void handleJiraTest().then(sendResponse);
+    return true;
+  }
+
+  if (message?.type === "ai:test") {
+    void handleAiTest().then(sendResponse);
     return true;
   }
 
@@ -120,6 +132,13 @@ async function getJiraConfig(): Promise<JiraConfig | null> {
   };
   if (!stored.jiraConfig) return null;
   return stored.jiraConfig;
+}
+
+async function getAiConfig(): Promise<AiConfig> {
+  const stored = (await chrome.storage.local.get("aiConfig")) as {
+    aiConfig?: AiConfig;
+  };
+  return stored.aiConfig || {};
 }
 
 function normalizeBaseUrl(url: string): string {
@@ -194,6 +213,63 @@ async function handleJiraTest() {
     return { ok: false, error: `Jira error (${response.status}): ${detail}` };
   }
   return { ok: true };
+}
+
+async function handleAiTest() {
+  const aiConfig = await getAiConfig();
+  const provider = aiConfig.provider || "ollama";
+  const model = aiConfig.model || "codellama";
+  const serverUrl = normalizeBaseUrl(aiConfig.serverUrl || "http://localhost:8787");
+  const ollamaUrl = aiConfig.ollamaUrl || "http://localhost:11434";
+
+  const healthResponse = await fetch(`${serverUrl}/health`).catch(
+    (error) => error as Error
+  );
+  if (healthResponse instanceof Error) {
+    return { ok: false, error: `AI server unavailable: ${healthResponse.message}` };
+  }
+  if (!healthResponse.ok) {
+    const detail = await safeReadError(healthResponse);
+    return {
+      ok: false,
+      error: `AI server error (${healthResponse.status}): ${detail}`,
+    };
+  }
+
+  const testResponse = await fetch(`${serverUrl}/generate-scenario`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      url: "https://example.com",
+      title: "AI connection test",
+      elementKey: "connection test element",
+      role: "button",
+      name: "Test",
+      selectedText: "Test",
+      imageName: null,
+      outerHTML: "<button>Test</button>",
+      thenLine: "Then the text \"Test\" should be visible",
+      issueType: "Feature",
+      provider,
+      model,
+      ollamaUrl,
+    }),
+  }).catch((error) => error as Error);
+
+  if (testResponse instanceof Error) {
+    return { ok: false, error: `AI test request failed: ${testResponse.message}` };
+  }
+  if (!testResponse.ok) {
+    const detail = await safeReadError(testResponse);
+    return { ok: false, error: `AI provider test failed (${testResponse.status}): ${detail}` };
+  }
+
+  const payload = (await testResponse.json()) as { scenario?: string };
+  if (!payload?.scenario?.trim()) {
+    return { ok: false, error: "AI provider test failed: empty response." };
+  }
+
+  return { ok: true, message: `Connection OK (${provider}:${model})` };
 }
 
 async function handleJiraListProjects() {

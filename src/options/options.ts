@@ -23,10 +23,16 @@ const aiModelEl = document.getElementById("aiModel") as HTMLInputElement;
 const ollamaUrlEl = document.getElementById("ollamaUrl") as HTMLInputElement;
 const aiStatusEl = document.getElementById("aiStatus") as HTMLSpanElement;
 const saveAiButton = document.getElementById("saveAi") as HTMLButtonElement;
+const testAiButton = document.getElementById("testAi") as HTMLButtonElement;
 
 const setStatus = (message: string, isError = false) => {
   statusEl.textContent = message;
   statusEl.style.color = isError ? "#b00020" : "#1f1f1f";
+};
+
+const setAiStatus = (message: string, isError = false) => {
+  aiStatusEl.textContent = message;
+  aiStatusEl.style.color = isError ? "#b00020" : "#1f1f1f";
 };
 
 const loadConfig = async () => {
@@ -78,7 +84,23 @@ saveButton.addEventListener("click", async () => {
 
 saveAiButton.addEventListener("click", async () => {
   await saveAiConfig();
-  aiStatusEl.textContent = "Saved";
+  setAiStatus("Saved");
+});
+
+testAiButton.addEventListener("click", async () => {
+  setAiStatus("Testing...");
+  await saveAiConfig();
+  chrome.runtime.sendMessage({ type: "ai:test" }, (response) => {
+    if (chrome.runtime.lastError) {
+      setAiStatus(chrome.runtime.lastError.message, true);
+      return;
+    }
+    if (!response?.ok) {
+      setAiStatus(response?.error || "Test failed", true);
+      return;
+    }
+    setAiStatus(response?.message || "Connection OK");
+  });
 });
 
 testButton.addEventListener("click", async () => {
