@@ -272,7 +272,6 @@ async function handleJiraCreateIssue(
     projectKey?: string;
     summary?: string;
     description?: string;
-    stepDef?: string;
     mapping?: string;
     issueType?: string;
     snapshotDataUrl?: string | null;
@@ -406,7 +405,6 @@ async function handleJiraCreateIssue(
   }
 
   const comments: string[] = [];
-  if (message.stepDef?.trim()) comments.push(message.stepDef.trim());
   if (message.mapping?.trim()) comments.push(message.mapping.trim());
 
   for (const comment of comments) {
