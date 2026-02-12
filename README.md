@@ -1,4 +1,4 @@
-# Test Authoring Helper (Gherkin)
+# QA Issue Creator
 
 ## Usage
 1. Build the extension: `npm install` then `npm run build`.
@@ -7,7 +7,7 @@
 4. Click **Load unpacked**.
 5. Select the `dist/` folder at `/Users/robertmichaels/Documents/code/testbrowserextension/dist`.
 6. Navigate to an allowed domain (example: `https://robjmichaels.com`).
-7. Right-click any element on the page and choose **Generate test step… → Assert visible**.
+7. Right-click any element on the page and choose **Issue Creator**.
 8. The overlay shows a Cucumber editor. Edit the text, use the keyword bar, and click **Copy**.
 
 ## Jira Integration
@@ -30,7 +30,7 @@
 1. Set your API key in the environment: `export OPENAI_API_KEY="..."`.
 2. Optional model override: `export OPENAI_MODEL="gpt-4o-mini"`.
 3. Run: `docker compose up --build`.
-4. The service will appear as `openai-server` in Docker.
+4. The service will appear as `issue-creator-server` in Docker.
 5. In extension options, set **AI Server URL** to `http://localhost:8787`.
 
 ## Tab Recording (Preview)

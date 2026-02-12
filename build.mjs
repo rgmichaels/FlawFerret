@@ -52,7 +52,7 @@ const build = async () => {
 
   await esbuild.build({
     entryPoints: {
-      "sw/service_worker": path.join(SRC, "sw", "service_worker.ts"),
+      "sw/qa_issue_background_service": path.join(SRC, "sw", "qa_issue_background_service.ts"),
       "content/content_script": path.join(SRC, "content", "content_script.ts"),
       "options/options": path.join(SRC, "options", "options.ts"),
       "offscreen/offscreen": path.join(SRC, "offscreen", "offscreen.ts")
@@ -72,7 +72,7 @@ const build = async () => {
 if (isWatch) {
   const ctx = await esbuild.context({
     entryPoints: {
-      "sw/service_worker": path.join(SRC, "sw", "service_worker.ts"),
+      "sw/qa_issue_background_service": path.join(SRC, "sw", "qa_issue_background_service.ts"),
       "content/content_script": path.join(SRC, "content", "content_script.ts"),
       "options/options": path.join(SRC, "options", "options.ts"),
       "offscreen/offscreen": path.join(SRC, "offscreen", "offscreen.ts")
