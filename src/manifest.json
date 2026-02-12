@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Test Authoring Helper (Gherkin)",
-  "version": "0.0.4",
-  "description": "Right-click elements to generate Gherkin + mapping for Playwright-Cucumber.",
+  "name": "QA Issue Creator",
+  "version": "0.0.9",
+  "description": "Capture exploratory QA context and create Jira issues faster.",
   "permissions": [
     "contextMenus",
     "activeTab",
@@ -27,7 +27,7 @@
     "https://*.atlassian.net/*"
   ],
   "background": {
-    "service_worker": "sw/service_worker.js",
+    "service_worker": "sw/qa_issue_background_service.js",
     "type": "module"
   },
   "content_scripts": [

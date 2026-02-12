@@ -1,7 +1,7 @@
-name: openai-server
+name: issue-creator-server
 
 services:
-  openai-server:
+  issue-creator-server:
     build: .
     ports:
       - "8787:8787"

@@ -1,4 +1,4 @@
-const MENU_ID = "generate-assert-visible";
+const MENU_ID = "create-jira-qa-issue";
 
 type JiraConfig = {
   baseUrl: string;
@@ -17,7 +17,7 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: MENU_ID,
-      title: "Create JIRA item",
+      title: "Issue Creator",
       contexts: ["all"],
     });
   });
@@ -131,6 +131,52 @@ function buildAuthHeader(email: string, token: string): string {
   return `Basic ${btoa(`${email}:${token}`)}`;
 }
 
+function buildBearerAuthHeader(token: string): string {
+  return `Bearer ${token}`;
+}
+
+function getAuthHeaders(config: JiraConfig, preferred?: string | null): string[] {
+  const headers: string[] = [];
+  if (preferred?.trim()) headers.push(preferred.trim());
+
+  const email = (config.email || "").trim();
+  const token = (config.token || "").trim();
+  if (email && token) headers.push(buildAuthHeader(email, token));
+  if (token) headers.push(buildBearerAuthHeader(token));
+
+  return [...new Set(headers)];
+}
+
+async function jiraFetchWithAuth(
+  config: JiraConfig,
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+  preferredAuthHeader?: string | null
+): Promise<{ response: Response; authHeader: string }> {
+  const authHeaders = getAuthHeaders(config, preferredAuthHeader);
+  let lastResponse: Response | null = null;
+  let lastAuthHeader = "";
+
+  for (let i = 0; i < authHeaders.length; i += 1) {
+    const authHeader = authHeaders[i];
+    const headers = new Headers(init.headers || {});
+    headers.set("Authorization", authHeader);
+    const response = await fetch(input, { ...init, headers });
+    lastResponse = response;
+    lastAuthHeader = authHeader;
+    if (response.status !== 401 || i === authHeaders.length - 1) {
+      return { response, authHeader };
+    }
+  }
+
+  return {
+    response:
+      lastResponse ||
+      new Response(null, { status: 401, statusText: "Unauthorized" }),
+    authHeader: lastAuthHeader,
+  };
+}
+
 async function handleJiraTest() {
   const config = await getJiraConfig();
   if (!config?.baseUrl || !config?.email || !config?.token) {
@@ -138,15 +184,15 @@ async function handleJiraTest() {
   }
 
   const baseUrl = normalizeBaseUrl(config.baseUrl);
-  const response = await fetch(`${baseUrl}/rest/api/3/myself`, {
+  const { response } = await jiraFetchWithAuth(config, `${baseUrl}/rest/api/3/myself`, {
     headers: {
-      Authorization: buildAuthHeader(config.email, config.token),
       Accept: "application/json",
     },
   });
 
   if (!response.ok) {
-    return { ok: false, error: `Jira error (${response.status})` };
+    const detail = await safeReadError(response);
+    return { ok: false, error: `Jira error (${response.status}): ${detail}` };
   }
   return { ok: true };
 }
@@ -158,18 +204,19 @@ async function handleJiraListProjects() {
   }
 
   const baseUrl = normalizeBaseUrl(config.baseUrl);
-  const response = await fetch(
+  const { response } = await jiraFetchWithAuth(
+    config,
     `${baseUrl}/rest/api/3/project/search?maxResults=100`,
     {
       headers: {
-        Authorization: buildAuthHeader(config.email, config.token),
         Accept: "application/json",
       },
     }
   );
 
   if (!response.ok) {
-    return { ok: false, error: `Jira error (${response.status})` };
+    const detail = await safeReadError(response);
+    return { ok: false, error: `Jira error (${response.status}): ${detail}` };
   }
 
   const payload = await response.json();
@@ -192,13 +239,13 @@ async function handleJiraListIssueTypes(message: { projectKey?: string }) {
   }
 
   const baseUrl = normalizeBaseUrl(config.baseUrl);
-  const response = await fetch(
+  const { response } = await jiraFetchWithAuth(
+    config,
     `${baseUrl}/rest/api/3/issue/createmeta?projectKeys=${encodeURIComponent(
       message.projectKey
     )}&expand=projects.issuetypes`,
     {
       headers: {
-        Authorization: buildAuthHeader(config.email, config.token),
         Accept: "application/json",
       },
     }
@@ -276,13 +323,13 @@ async function handleJiraCreateIssue(
       : ["Task", "Story"];
 
   let issueKey: string | null = null;
+  let authHeader: string | null = null;
   let lastError = "";
 
   for (const candidate of typeCandidates) {
-    const response = await fetch(`${baseUrl}/rest/api/3/issue`, {
+    const request = await jiraFetchWithAuth(config, `${baseUrl}/rest/api/3/issue`, {
       method: "POST",
       headers: {
-        Authorization: buildAuthHeader(config.email, config.token),
         Accept: "application/json",
         "Content-Type": "application/json",
       },
@@ -295,10 +342,12 @@ async function handleJiraCreateIssue(
         },
       }),
     });
+    const response = request.response;
 
     if (response.ok) {
       const payload = await response.json();
       issueKey = payload.key as string;
+      authHeader = request.authHeader;
       break;
     }
 
@@ -331,21 +380,27 @@ async function handleJiraCreateIssue(
       message.devicePixelRatio || 1
     );
     if (attachment) {
-      await uploadAttachment(baseUrl, config, issueKey, attachment);
+      await uploadAttachment(
+        baseUrl,
+        config,
+        issueKey,
+        attachment,
+        authHeader
+      );
     }
   }
 
   if (message.recordingDataUrl) {
     const response = await fetch(message.recordingDataUrl);
     const blob = await response.blob();
-    await uploadAttachment(baseUrl, config, issueKey, blob);
+    await uploadAttachment(baseUrl, config, issueKey, blob, authHeader);
   } else if (message.recordingId) {
     await sendToOffscreen({
       type: "record:upload",
       target: "offscreen",
       recordingId: message.recordingId,
       baseUrl,
-      authHeader: buildAuthHeader(config.email, config.token),
+      authHeader: authHeader || getAuthHeaders(config)[0] || "",
       issueKey,
     });
   }
@@ -355,30 +410,32 @@ async function handleJiraCreateIssue(
   if (message.mapping?.trim()) comments.push(message.mapping.trim());
 
   for (const comment of comments) {
-    const commentResponse = await fetch(
+    const commentRequest = await jiraFetchWithAuth(
+      config,
       `${baseUrl}/rest/api/3/issue/${issueKey}/comment`,
       {
-      method: "POST",
-      headers: {
-        Authorization: buildAuthHeader(config.email, config.token),
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        body: {
-          type: "doc",
-          version: 1,
-          content: [
-            {
-              type: "codeBlock",
-              attrs: { language: "text" },
-              content: [{ type: "text", text: comment }],
-            },
-          ],
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
-      }),
+        body: JSON.stringify({
+          body: {
+            type: "doc",
+            version: 1,
+            content: [
+              {
+                type: "codeBlock",
+                attrs: { language: "text" },
+                content: [{ type: "text", text: comment }],
+              },
+            ],
+          },
+        }),
       }
     );
+    const commentResponse = commentRequest.response;
+    authHeader = commentRequest.authHeader;
     if (!commentResponse.ok) {
       const detail = await safeReadError(commentResponse);
       return {
@@ -538,22 +595,24 @@ async function uploadAttachment(
   baseUrl: string,
   config: JiraConfig,
   issueKey: string,
-  blob: Blob
+  blob: Blob,
+  preferredAuthHeader?: string | null
 ) {
   const form = new FormData();
   form.append("file", blob, "selection.png");
 
-  const response = await fetch(
+  const { response } = await jiraFetchWithAuth(
+    config,
     `${baseUrl}/rest/api/3/issue/${issueKey}/attachments`,
     {
-    method: "POST",
-    headers: {
-      Authorization: buildAuthHeader(config.email, config.token),
-      Accept: "application/json",
-      "X-Atlassian-Token": "no-check",
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "X-Atlassian-Token": "no-check",
+      },
+      body: form,
     },
-    body: form,
-    }
+    preferredAuthHeader
   );
   if (!response.ok) {
     const detail = await safeReadError(response);
