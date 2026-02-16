@@ -26,18 +26,7 @@
     "offscreen"
   ],
   "host_permissions": [
-    "https://*.robjmichaels.com/*",
-    "https://robjmichaels.com/*",
-    "https://*.hardmileoutfitters.com/*",
-    "https://hardmileoutfitters.com/*",
-    "https://*.exquisitepets.shop/*",
-    "https://exquisitepets.shop/*",
-    "http://localhost:3000/*",
-    "http://127.0.0.1:3000/*",
-    "http://localhost:8787/*",
-    "http://127.0.0.1:8787/*",
-    "https://rob-michaels.atlassian.net/*",
-    "https://*.atlassian.net/*"
+    "<all_urls>"
   ],
   "background": {
     "service_worker": "sw/qa_issue_background_service.js",
@@ -46,14 +35,7 @@
   "content_scripts": [
     {
       "matches": [
-        "https://*.robjmichaels.com/*",
-        "https://robjmichaels.com/*",
-        "https://*.hardmileoutfitters.com/*",
-        "https://hardmileoutfitters.com/*",
-        "https://*.exquisitepets.shop/*",
-        "https://exquisitepets.shop/*",
-        "http://localhost:3000/*",
-        "http://127.0.0.1:3000/*"
+        "<all_urls>"
       ],
       "js": [
         "content/content_script.js"
