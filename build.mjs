@@ -45,6 +45,11 @@ const copyStatic = () => {
     path.join(SRC, "offscreen", "offscreen.html"),
     path.join(offscreenDir, "offscreen.html")
   );
+
+  const iconsSrcDir = path.join(SRC, "icons");
+  if (fs.existsSync(iconsSrcDir)) {
+    fs.cpSync(iconsSrcDir, path.join(DIST, "icons"), { recursive: true });
+  }
 };
 
 const build = async () => {
