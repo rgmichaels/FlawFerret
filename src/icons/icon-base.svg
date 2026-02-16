@@ -1,11 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="QA Issue Creator icon">
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="IC icon">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#1f3b73"/>
-      <stop offset="100%" stop-color="#2e5fb8"/>
+      <stop offset="0%" stop-color="#0f2f6b"/>
+      <stop offset="100%" stop-color="#17489f"/>
     </linearGradient>
   </defs>
   <rect x="6" y="6" width="116" height="116" rx="24" fill="url(#bg)"/>
-  <circle cx="64" cy="58" r="26" fill="none" stroke="#ffffff" stroke-width="12"/>
-  <rect x="78" y="78" width="24" height="10" rx="5" transform="rotate(45 90 83)" fill="#ffffff"/>
+
+  <!-- I -->
+  <rect x="28" y="30" width="14" height="68" rx="7" fill="#ffffff"/>
+
+  <!-- C ring with right-side opening to make a clear C at small sizes -->
+  <circle cx="76" cy="64" r="28" fill="none" stroke="#ffffff" stroke-width="14"/>
+  <rect x="80" y="40" width="30" height="48" fill="url(#bg)"/>
 </svg>
