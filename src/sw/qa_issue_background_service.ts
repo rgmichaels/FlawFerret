@@ -33,20 +33,69 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId !== MENU_ID) return;
   if (!tab?.id) return;
 
-  chrome.tabs.sendMessage(
-    tab.id,
-    { type: "capture-and-copy" },
-    (response) => {
+  void handleCaptureFromContextMenu(tab.id);
+});
+
+async function handleCaptureFromContextMenu(tabId: number): Promise<void> {
+  const initial = await sendCaptureRequest(tabId);
+  if (initial.ok) return;
+
+  if (!isMissingReceiverError(initial.errorMessage)) {
+    console.warn("Capture failed:", initial.errorMessage || "Unknown error");
+    return;
+  }
+
+  const injected = await injectContentScript(tabId);
+  if (!injected.ok) {
+    console.warn("Capture failed:", injected.errorMessage || "Script injection failed");
+    return;
+  }
+
+  const retry = await sendCaptureRequest(tabId);
+  if (!retry.ok) {
+    console.warn("Capture failed:", retry.errorMessage || "Unknown error");
+  }
+}
+
+async function injectContentScript(
+  tabId: number
+): Promise<{ ok: true } | { ok: false; errorMessage: string }> {
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ["content/content_script.js"],
+    });
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, errorMessage: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+function sendCaptureRequest(
+  tabId: number
+): Promise<{ ok: true } | { ok: false; errorMessage?: string }> {
+  return new Promise((resolve) => {
+    chrome.tabs.sendMessage(tabId, { type: "capture-and-copy" }, (response) => {
       if (chrome.runtime.lastError) {
-        console.warn("Capture failed:", chrome.runtime.lastError.message);
+        resolve({ ok: false, errorMessage: chrome.runtime.lastError.message });
         return;
       }
       if (!response?.ok) {
-        console.warn("Capture failed:", response?.error || "Unknown error");
+        resolve({ ok: false, errorMessage: response?.error || "Unknown error" });
+        return;
       }
-    }
+      resolve({ ok: true });
+    });
+  });
+}
+
+function isMissingReceiverError(message?: string): boolean {
+  if (!message) return false;
+  return (
+    message.includes("Could not establish connection") ||
+    message.includes("Receiving end does not exist")
   );
-});
+}
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.target === "offscreen") {
