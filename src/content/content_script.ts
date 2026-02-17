@@ -1032,10 +1032,12 @@ function showOverlay(text: string, meta: OverlayMeta): void {
     });
 
     if (!projectKey) {
+      jiraStatus.style.color = "#c62828";
       jiraStatus.textContent = "Choose Jira project";
       return;
     }
 
+    jiraStatus.style.color = "#4b4b4b";
     jiraStatus.textContent = "Creating ticket...";
     jiraLink.style.display = "none";
     chrome.runtime.sendMessage(
@@ -1055,13 +1057,16 @@ function showOverlay(text: string, meta: OverlayMeta): void {
       },
       async (response) => {
         if (chrome.runtime.lastError) {
+          jiraStatus.style.color = "#c62828";
           jiraStatus.textContent = chrome.runtime.lastError.message;
           return;
         }
         if (!response?.ok) {
+          jiraStatus.style.color = "#c62828";
           jiraStatus.textContent = response?.error || "Failed to create issue";
           return;
         }
+        jiraStatus.style.color = "#2e7d32";
         jiraStatus.textContent = `Created ${response.key}`;
         const baseUrl = await getJiraBaseUrl();
         if (baseUrl) {
