@@ -91,7 +91,6 @@ async function handleCaptureAndCopy(): Promise<CaptureResult> {
 
   const capture = buildCapture(target);
   const output = formatClipboard(capture);
-  await writeClipboard(output);
   const captureRect = getCaptureRect(target);
   const snapshotUrl = captureRect ? await requestSnapshot(captureRect) : null;
   showOverlay(output, {
@@ -558,23 +557,6 @@ async function requestSnapshot(
   });
 }
 
-async function writeClipboard(text: string): Promise<void> {
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-    return;
-  }
-
-  const textarea = document.createElement("textarea");
-  textarea.value = text;
-  textarea.style.position = "fixed";
-  textarea.style.left = "-9999px";
-  document.body.appendChild(textarea);
-  textarea.focus();
-  textarea.select();
-  document.execCommand("copy");
-  document.body.removeChild(textarea);
-}
-
 function normalizeWhitespace(value: string): string {
   return value.replace(/\s+/g, " ").trim();
 }
@@ -625,7 +607,7 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   header.style.cursor = "move";
 
   const headerTitle = document.createElement("div");
-  headerTitle.textContent = "Copied to clipboard";
+  headerTitle.textContent = "FlawFerret";
 
   const headerCloseButton = document.createElement("button");
   headerCloseButton.textContent = "✕";
