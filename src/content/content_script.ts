@@ -681,6 +681,7 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   jiraPanel.style.borderRadius = "10px";
   jiraPanel.style.border = "1px solid #e0d8cc";
   jiraPanel.style.background = "#ffffff";
+  jiraPanel.style.setProperty("color", "#1f1f1f", "important");
 
   const jiraHeader = document.createElement("div");
   jiraHeader.style.display = "flex";
@@ -692,6 +693,7 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   jiraTitle.textContent = "Create Jira Ticket";
   jiraTitle.style.fontWeight = "600";
   jiraTitle.style.fontFamily = "system-ui, -apple-system, sans-serif";
+  jiraTitle.style.setProperty("color", "#1f1f1f", "important");
 
   const jiraRow = document.createElement("div");
   jiraRow.style.display = "flex";
@@ -703,6 +705,8 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   issueTypeSelect.style.padding = "8px 10px";
   issueTypeSelect.style.borderRadius = "8px";
   issueTypeSelect.style.border = "1px solid #e0d8cc";
+  issueTypeSelect.style.background = "#ffffff";
+  issueTypeSelect.style.setProperty("color", "#1f1f1f", "important");
   const issueTypePlaceholder = document.createElement("option");
   issueTypePlaceholder.value = "";
   issueTypePlaceholder.textContent = "Issue type";
@@ -713,6 +717,8 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   projectSelect.style.padding = "8px 10px";
   projectSelect.style.borderRadius = "8px";
   projectSelect.style.border = "1px solid #e0d8cc";
+  projectSelect.style.background = "#ffffff";
+  projectSelect.style.setProperty("color", "#1f1f1f", "important");
 
   const summaryInput = document.createElement("input");
   summaryInput.type = "text";
@@ -720,6 +726,8 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   summaryInput.style.padding = "8px 10px";
   summaryInput.style.borderRadius = "8px";
   summaryInput.style.border = "1px solid #e0d8cc";
+  summaryInput.style.background = "#ffffff";
+  summaryInput.style.setProperty("color", "#1f1f1f", "important");
   summaryInput.value = `UI: ${meta.elementKey} should be visible`;
 
   const jiraStatus = document.createElement("div");
