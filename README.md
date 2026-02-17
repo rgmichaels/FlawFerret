@@ -1,4 +1,4 @@
-# Bug Badger
+# FaultFerret
 
 ## Usage
 1. Build the extension: `npm install` then `npm run build`.
@@ -7,7 +7,7 @@
 4. Click **Load unpacked**.
 5. Select the `dist/` folder at `/Users/robertmichaels/Documents/code/testbrowserextension/dist`.
 6. Navigate to an allowed domain (example: `https://robjmichaels.com`).
-7. Right-click any element on the page and choose **Bug Badger**.
+7. Right-click any element on the page and choose **FaultFerret**.
 8. The overlay shows a Cucumber editor. Edit the text, use the keyword bar, and click **Copy**.
 
 ## Jira Integration
