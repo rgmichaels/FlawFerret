@@ -618,8 +618,37 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   header.style.padding = "12px 16px";
   header.style.fontFamily = "system-ui, -apple-system, sans-serif";
   header.style.fontWeight = "600";
+  header.style.display = "flex";
+  header.style.alignItems = "center";
+  header.style.justifyContent = "space-between";
+  header.style.gap = "8px";
   header.style.cursor = "move";
-  header.textContent = "Copied to clipboard";
+
+  const headerTitle = document.createElement("div");
+  headerTitle.textContent = "Copied to clipboard";
+
+  const headerCloseButton = document.createElement("button");
+  headerCloseButton.textContent = "✕";
+  headerCloseButton.title = "Close";
+  headerCloseButton.setAttribute("aria-label", "Close");
+  headerCloseButton.style.width = "30px";
+  headerCloseButton.style.height = "30px";
+  headerCloseButton.style.padding = "0";
+  headerCloseButton.style.borderRadius = "8px";
+  headerCloseButton.style.border = "1px solid rgba(255,255,255,0.55)";
+  headerCloseButton.style.background = "transparent";
+  headerCloseButton.style.color = "#ffffff";
+  headerCloseButton.style.cursor = "pointer";
+  headerCloseButton.addEventListener("mousedown", (event) => {
+    event.stopPropagation();
+  });
+  headerCloseButton.addEventListener("click", (event) => {
+    event.stopPropagation();
+    overlay.remove();
+  });
+
+  header.appendChild(headerTitle);
+  header.appendChild(headerCloseButton);
 
   const body = document.createElement("div");
   body.style.padding = "12px 16px";
@@ -670,7 +699,6 @@ function showOverlay(text: string, meta: OverlayMeta): void {
     button.addEventListener("click", () => {
       insertAtCursor(textarea, `${keyword} `);
       textarea.focus();
-      updateCopyState();
     });
     return button;
   };
@@ -799,86 +827,34 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   const footer = document.createElement("div");
   footer.style.display = "flex";
   footer.style.justifyContent = "space-between";
-  footer.style.gap = "8px";
+  footer.style.gap = "12px";
+  footer.style.alignItems = "center";
   footer.style.padding = "10px 16px 14px";
   footer.style.background = "#ffffff";
 
-  const footerLeft = document.createElement("div");
-  footerLeft.style.display = "flex";
-  footerLeft.style.gap = "8px";
-  footerLeft.style.alignItems = "center";
-
-  const footerRight = document.createElement("div");
-  footerRight.style.display = "flex";
-  footerRight.style.gap = "8px";
-  footerRight.style.alignItems = "center";
-
-  const versionLabel = document.createElement("div");
-  versionLabel.textContent = `v${chrome.runtime.getManifest().version}`;
-  versionLabel.style.fontSize = "11px";
-  versionLabel.style.color = "#8a8175";
-  versionLabel.style.marginLeft = "6px";
-
-  const originalText = text;
-  const copyButton = document.createElement("button");
-  copyButton.textContent = "Copy";
-  copyButton.style.padding = "8px 14px";
-  copyButton.style.borderRadius = "8px";
-  copyButton.style.border = "1px solid #1f1f1f";
-  copyButton.style.background = "#ffffff";
-  copyButton.style.color = "#1f1f1f";
-  copyButton.style.cursor = "pointer";
-  copyButton.disabled = true;
-  copyButton.style.opacity = "0.5";
-  copyButton.style.cursor = "not-allowed";
-
-  const updateCopyState = () => {
-    const isDirty = textarea.value !== originalText;
-    copyButton.disabled = !isDirty;
-    copyButton.style.opacity = isDirty ? "1" : "0.5";
-    copyButton.style.cursor = isDirty ? "pointer" : "not-allowed";
-  };
-
-  textarea.addEventListener("input", updateCopyState);
+  const footerActions = document.createElement("div");
+  footerActions.style.display = "flex";
+  footerActions.style.gap = "12px";
+  footerActions.style.alignItems = "center";
+  footerActions.style.justifyContent = "flex-end";
+  footerActions.style.flexWrap = "wrap";
 
   const applyInitialUi = () => {
   if (meta.initialUi?.issueType) issueTypeSelect.value = meta.initialUi.issueType;
     if (meta.initialUi?.projectKey) projectSelect.value = meta.initialUi.projectKey;
     if (meta.initialUi?.summary) summaryInput.value = meta.initialUi.summary;
     if (meta.initialUi?.cucumber) textarea.value = meta.initialUi.cucumber;
-    updateCopyState();
   };
 
   if (meta.initialUi) {
     applyInitialUi();
   }
 
-  copyButton.addEventListener("click", async () => {
-    if (copyButton.disabled) return;
-    await writeClipboard(textarea.value);
-    header.textContent = "Copied to clipboard";
-    copyButton.textContent = "Copied";
-    setTimeout(() => {
-      copyButton.textContent = "Copy";
-    }, 1200);
-    updateCopyState();
-  });
-
-  const closeButton = document.createElement("button");
-  closeButton.textContent = "Close";
-  closeButton.style.padding = "8px 14px";
-  closeButton.style.borderRadius = "8px";
-  closeButton.style.border = "1px solid #1f1f1f";
-  closeButton.style.background = "#1f1f1f";
-  closeButton.style.color = "#ffffff";
-  closeButton.style.cursor = "pointer";
-  closeButton.addEventListener("click", () => overlay.remove());
-
   const aiButton = document.createElement("button");
-  aiButton.textContent = "Generate with AI";
-  aiButton.style.padding = "8px 14px";
-  aiButton.style.borderRadius = "8px";
-  aiButton.style.border = "1px solid #1f1f1f";
+  aiButton.textContent = "✦ Generate with AI";
+  aiButton.style.padding = "10px 18px";
+  aiButton.style.borderRadius = "12px";
+  aiButton.style.border = "1px solid #b8b8b8";
   aiButton.style.background = "#ffffff";
   aiButton.style.color = "#1f1f1f";
   aiButton.style.cursor = "pointer";
@@ -890,22 +866,21 @@ function showOverlay(text: string, meta: OverlayMeta): void {
       if (scenario) {
         textarea.value = appendPageLine(scenario, meta.url);
         summaryInput.value = buildJiraSummaryFromScenario(scenario, meta.elementKey);
-        header.textContent = "AI scenario ready";
-        updateCopyState();
+        headerTitle.textContent = "AI scenario ready";
       } else {
-        header.textContent = "AI generation failed";
+        headerTitle.textContent = "AI generation failed";
       }
     } finally {
       aiButton.disabled = false;
-      aiButton.textContent = "Generate with AI";
+      aiButton.textContent = "✦ Generate with AI";
     }
   });
 
   const recordButton = document.createElement("button");
-  recordButton.textContent = "Record Tab";
-  recordButton.style.padding = "8px 14px";
-  recordButton.style.borderRadius = "8px";
-  recordButton.style.border = "1px solid #1f1f1f";
+  recordButton.textContent = "⦿ Record Tab";
+  recordButton.style.padding = "10px 18px";
+  recordButton.style.borderRadius = "12px";
+  recordButton.style.border = "1px solid #b8b8b8";
   recordButton.style.background = "#ffffff";
   recordButton.style.color = "#1f1f1f";
   recordButton.style.cursor = "pointer";
@@ -914,9 +889,9 @@ function showOverlay(text: string, meta: OverlayMeta): void {
     recordButton.textContent = "Recording...";
     const started = await startTabRecording();
     recordButton.disabled = false;
-    recordButton.textContent = "Record Tab";
+    recordButton.textContent = "⦿ Record Tab";
     if (!started.ok) {
-      header.textContent = started.error
+      headerTitle.textContent = started.error
         ? `Recording failed: ${started.error}`
         : "Recording failed";
       return;
@@ -996,15 +971,23 @@ function showOverlay(text: string, meta: OverlayMeta): void {
     body.appendChild(videoWrap);
   }
 
-  footerLeft.appendChild(optionsButton);
-  footerLeft.appendChild(jiraButton);
-  footerLeft.appendChild(aiButton);
-  footerLeft.appendChild(recordButton);
-  footerRight.appendChild(copyButton);
-  footerRight.appendChild(closeButton);
-  footer.appendChild(footerLeft);
-  footer.appendChild(versionLabel);
-  footer.appendChild(footerRight);
+  optionsButton.style.borderColor = "#b8b8b8";
+  optionsButton.style.borderRadius = "12px";
+  optionsButton.style.width = "52px";
+  optionsButton.style.height = "44px";
+
+  jiraButton.style.padding = "10px 20px";
+  jiraButton.style.borderRadius = "12px";
+  jiraButton.style.minWidth = "220px";
+  jiraButton.style.textAlign = "center";
+  jiraButton.style.fontSize = "14px";
+  jiraButton.textContent = "Create Jira Ticket  ›";
+
+  footer.appendChild(optionsButton);
+  footerActions.appendChild(aiButton);
+  footerActions.appendChild(recordButton);
+  footerActions.appendChild(jiraButton);
+  footer.appendChild(footerActions);
   card.appendChild(header);
   card.appendChild(body);
   card.appendChild(footer);
