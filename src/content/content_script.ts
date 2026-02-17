@@ -744,12 +744,18 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   jiraButton.style.cursor = "pointer";
 
   const optionsButton = document.createElement("button");
-  optionsButton.textContent = "Jira Settings";
-  optionsButton.style.padding = "8px 14px";
+  optionsButton.textContent = "⚙";
+  optionsButton.title = "Jira Settings";
+  optionsButton.setAttribute("aria-label", "Jira Settings");
+  optionsButton.style.width = "42px";
+  optionsButton.style.height = "42px";
+  optionsButton.style.padding = "0";
   optionsButton.style.borderRadius = "8px";
   optionsButton.style.border = "1px solid #1f1f1f";
   optionsButton.style.background = "#ffffff";
   optionsButton.style.color = "#1f1f1f";
+  optionsButton.style.fontSize = "20px";
+  optionsButton.style.lineHeight = "1";
   optionsButton.style.cursor = "pointer";
   optionsButton.addEventListener("click", () => {
     chrome.runtime.sendMessage({ type: "open-options" });
