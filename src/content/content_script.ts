@@ -639,6 +639,9 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   headerCloseButton.style.background = "transparent";
   headerCloseButton.style.color = "#ffffff";
   headerCloseButton.style.cursor = "pointer";
+  headerCloseButton.addEventListener("mousedown", (event) => {
+    event.stopPropagation();
+  });
   headerCloseButton.addEventListener("click", (event) => {
     event.stopPropagation();
     overlay.remove();
