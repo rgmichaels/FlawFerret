@@ -824,12 +824,18 @@ function showOverlay(text: string, meta: OverlayMeta): void {
 
   const footer = document.createElement("div");
   footer.style.display = "flex";
-  footer.style.justifyContent = "flex-start";
+  footer.style.justifyContent = "space-between";
   footer.style.gap = "12px";
   footer.style.alignItems = "center";
-  footer.style.flexWrap = "wrap";
   footer.style.padding = "10px 16px 14px";
   footer.style.background = "#ffffff";
+
+  const footerActions = document.createElement("div");
+  footerActions.style.display = "flex";
+  footerActions.style.gap = "12px";
+  footerActions.style.alignItems = "center";
+  footerActions.style.justifyContent = "flex-end";
+  footerActions.style.flexWrap = "wrap";
 
   const originalText = text;
   const copyButton = document.createElement("button");
@@ -1005,15 +1011,17 @@ function showOverlay(text: string, meta: OverlayMeta): void {
 
   jiraButton.style.padding = "10px 20px";
   jiraButton.style.borderRadius = "12px";
-  jiraButton.style.minWidth = "260px";
-  jiraButton.style.textAlign = "left";
+  jiraButton.style.minWidth = "220px";
+  jiraButton.style.textAlign = "center";
+  jiraButton.style.fontSize = "14px";
   jiraButton.textContent = "Create Jira Ticket  ›";
 
   footer.appendChild(optionsButton);
-  footer.appendChild(aiButton);
-  footer.appendChild(recordButton);
-  footer.appendChild(copyButton);
-  footer.appendChild(jiraButton);
+  footerActions.appendChild(aiButton);
+  footerActions.appendChild(recordButton);
+  footerActions.appendChild(copyButton);
+  footerActions.appendChild(jiraButton);
+  footer.appendChild(footerActions);
   card.appendChild(header);
   card.appendChild(body);
   card.appendChild(footer);
