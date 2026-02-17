@@ -37,23 +37,15 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 });
 
 async function handleCaptureFromContextMenu(tabId: number): Promise<void> {
-  const initial = await sendCaptureRequest(tabId);
-  if (initial.ok) return;
-
-  if (!isMissingReceiverError(initial.errorMessage)) {
-    console.warn("Capture failed:", initial.errorMessage || "Unknown error");
-    return;
-  }
-
   const injected = await injectContentScript(tabId);
   if (!injected.ok) {
     console.warn("Capture failed:", injected.errorMessage || "Script injection failed");
     return;
   }
 
-  const retry = await sendCaptureRequest(tabId);
-  if (!retry.ok) {
-    console.warn("Capture failed:", retry.errorMessage || "Unknown error");
+  const result = await sendCaptureRequest(tabId);
+  if (!result.ok) {
+    console.warn("Capture failed:", result.errorMessage || "Unknown error");
   }
 }
 
@@ -87,14 +79,6 @@ function sendCaptureRequest(
       resolve({ ok: true });
     });
   });
-}
-
-function isMissingReceiverError(message?: string): boolean {
-  if (!message) return false;
-  return (
-    message.includes("Could not establish connection") ||
-    message.includes("Receiving end does not exist")
-  );
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
