@@ -23,7 +23,7 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: MENU_ID,
-      title: "Issue Creator",
+      title: "Bug Badger",
       contexts: ["all"],
     });
   });
