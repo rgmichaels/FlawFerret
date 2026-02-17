@@ -696,7 +696,6 @@ function showOverlay(text: string, meta: OverlayMeta): void {
     button.addEventListener("click", () => {
       insertAtCursor(textarea, `${keyword} `);
       textarea.focus();
-      updateCopyState();
     });
     return button;
   };
@@ -837,50 +836,16 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   footerActions.style.justifyContent = "flex-end";
   footerActions.style.flexWrap = "wrap";
 
-  const originalText = text;
-  const copyButton = document.createElement("button");
-  copyButton.textContent = "📋 Copy";
-  copyButton.style.padding = "10px 18px";
-  copyButton.style.borderRadius = "12px";
-  copyButton.style.border = "1px solid #b8b8b8";
-  copyButton.style.background = "#ffffff";
-  copyButton.style.color = "#1f1f1f";
-  copyButton.style.cursor = "pointer";
-  copyButton.disabled = true;
-  copyButton.style.opacity = "0.5";
-  copyButton.style.cursor = "not-allowed";
-
-  const updateCopyState = () => {
-    const isDirty = textarea.value !== originalText;
-    copyButton.disabled = !isDirty;
-    copyButton.style.opacity = isDirty ? "1" : "0.5";
-    copyButton.style.cursor = isDirty ? "pointer" : "not-allowed";
-  };
-
-  textarea.addEventListener("input", updateCopyState);
-
   const applyInitialUi = () => {
   if (meta.initialUi?.issueType) issueTypeSelect.value = meta.initialUi.issueType;
     if (meta.initialUi?.projectKey) projectSelect.value = meta.initialUi.projectKey;
     if (meta.initialUi?.summary) summaryInput.value = meta.initialUi.summary;
     if (meta.initialUi?.cucumber) textarea.value = meta.initialUi.cucumber;
-    updateCopyState();
   };
 
   if (meta.initialUi) {
     applyInitialUi();
   }
-
-  copyButton.addEventListener("click", async () => {
-    if (copyButton.disabled) return;
-    await writeClipboard(textarea.value);
-    headerTitle.textContent = "Copied to clipboard";
-    copyButton.textContent = "Copied";
-    setTimeout(() => {
-      copyButton.textContent = "📋 Copy";
-    }, 1200);
-    updateCopyState();
-  });
 
   const aiButton = document.createElement("button");
   aiButton.textContent = "✦ Generate with AI";
@@ -899,7 +864,6 @@ function showOverlay(text: string, meta: OverlayMeta): void {
         textarea.value = appendPageLine(scenario, meta.url);
         summaryInput.value = buildJiraSummaryFromScenario(scenario, meta.elementKey);
         headerTitle.textContent = "AI scenario ready";
-        updateCopyState();
       } else {
         headerTitle.textContent = "AI generation failed";
       }
@@ -1019,7 +983,6 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   footer.appendChild(optionsButton);
   footerActions.appendChild(aiButton);
   footerActions.appendChild(recordButton);
-  footerActions.appendChild(copyButton);
   footerActions.appendChild(jiraButton);
   footer.appendChild(footerActions);
   card.appendChild(header);
