@@ -3,6 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const isWatch = process.argv.includes("--watch");
+const shouldBumpVersion = process.argv.includes("--bump-version");
 
 const ROOT = process.cwd();
 const SRC = path.join(ROOT, "src");
@@ -70,7 +71,7 @@ const build = async () => {
     sourcemap: true
   });
 
-  writeManifest(true);
+  writeManifest(shouldBumpVersion);
   copyStatic();
 };
 

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
+    "build:release": "node build.mjs --bump-version",
     "watch": "node build.mjs --watch",
     "clean": "rm -rf dist",
     "test": "node --test tests/*.test.mjs",
