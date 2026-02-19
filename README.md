@@ -6,9 +6,9 @@
 3. Enable **Developer mode** (top right).
 4. Click **Load unpacked**.
 5. Select the `dist/` folder at `/Users/robertmichaels/Documents/code/testbrowserextension/dist`.
-6. Navigate to an allowed domain (example: `https://robjmichaels.com`).
+6. Navigate to any regular web page and right-click a target element.
 7. Right-click any element on the page and choose **FlawFerret**.
-8. The overlay shows a Cucumber editor. Edit the text, use the keyword bar, and click **Copy**.
+8. The overlay opens with captured context; edit text, generate with AI, and create a Jira ticket.
 
 ## Jira Integration
 1. Open the extension settings: `chrome://extensions` → **Details** → **Extension options**.
@@ -37,9 +37,3 @@
 2. The overlay hides and a small **Recording** control appears.
 3. Click **Stop** to return to the overlay with a recording preview.
 4. When creating the Jira ticket, the recording is attached automatically.
-
-## Allowed Domains
-- `robjmichaels.com`
-- `hardmileoutfitters.com`
-- `exquisitepets.shop`
-- `localhost:3000`
