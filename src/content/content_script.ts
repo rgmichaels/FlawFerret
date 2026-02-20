@@ -821,8 +821,25 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   footerActions.style.justifyContent = "flex-end";
   footerActions.style.flexWrap = "wrap";
 
+  const setButtonProgressState = (
+    button: HTMLButtonElement,
+    isInProgress: boolean,
+    defaultLabel: string,
+    progressLabel: string,
+    withSpinner = false
+  ): void => {
+    button.disabled = isInProgress;
+    button.style.opacity = isInProgress ? "0.68" : "1";
+    button.style.cursor = isInProgress ? "not-allowed" : "pointer";
+    if (isInProgress) {
+      button.textContent = withSpinner ? `⏳ ${progressLabel}` : progressLabel;
+      return;
+    }
+    button.textContent = defaultLabel;
+  };
+
   const applyInitialUi = () => {
-  if (meta.initialUi?.issueType) issueTypeSelect.value = meta.initialUi.issueType;
+    if (meta.initialUi?.issueType) issueTypeSelect.value = meta.initialUi.issueType;
     if (meta.initialUi?.projectKey) projectSelect.value = meta.initialUi.projectKey;
     if (meta.initialUi?.summary) summaryInput.value = meta.initialUi.summary;
     if (meta.initialUi?.cucumber) textarea.value = meta.initialUi.cucumber;
@@ -840,9 +857,9 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   aiButton.style.background = "#ffffff";
   aiButton.style.color = "#1f1f1f";
   aiButton.style.cursor = "pointer";
+  const aiButtonLabel = "✦ Generate with AI";
   aiButton.addEventListener("click", async () => {
-    aiButton.disabled = true;
-    aiButton.textContent = "Generating...";
+    setButtonProgressState(aiButton, true, aiButtonLabel, "Generating...");
     try {
       const scenario = await generateScenario(meta, issueTypeSelect.value);
       if (scenario) {
@@ -853,8 +870,7 @@ function showOverlay(text: string, meta: OverlayMeta): void {
         headerTitle.textContent = "AI generation failed";
       }
     } finally {
-      aiButton.disabled = false;
-      aiButton.textContent = "✦ Generate with AI";
+      setButtonProgressState(aiButton, false, aiButtonLabel, "Generating...");
     }
   });
 
@@ -866,12 +882,11 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   recordButton.style.background = "#ffffff";
   recordButton.style.color = "#1f1f1f";
   recordButton.style.cursor = "pointer";
+  const recordButtonLabel = "⦿ Record Tab";
   recordButton.addEventListener("click", async () => {
-    recordButton.disabled = true;
-    recordButton.textContent = "Recording...";
+    setButtonProgressState(recordButton, true, recordButtonLabel, "Recording...");
     const started = await startTabRecording();
-    recordButton.disabled = false;
-    recordButton.textContent = "⦿ Record Tab";
+    setButtonProgressState(recordButton, false, recordButtonLabel, "Recording...");
     if (!started.ok) {
       headerTitle.textContent = started.error
         ? `Recording failed: ${started.error}`
@@ -963,7 +978,8 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   jiraButton.style.minWidth = "220px";
   jiraButton.style.textAlign = "center";
   jiraButton.style.fontSize = "14px";
-  jiraButton.textContent = "Create Jira Ticket  ›";
+  const jiraButtonLabel = "Create Jira Ticket  ›";
+  jiraButton.textContent = jiraButtonLabel;
 
   footer.appendChild(optionsButton);
   footerActions.appendChild(aiButton);
@@ -1022,6 +1038,13 @@ function showOverlay(text: string, meta: OverlayMeta): void {
     jiraStatus.style.color = "#4b4b4b";
     jiraStatus.textContent = "Creating ticket...";
     jiraLink.style.display = "none";
+    setButtonProgressState(
+      jiraButton,
+      true,
+      jiraButtonLabel,
+      "Creating Jira Ticket...",
+      true
+    );
     chrome.runtime.sendMessage(
       {
         type: "jira:create-issue",
@@ -1038,6 +1061,13 @@ function showOverlay(text: string, meta: OverlayMeta): void {
         devicePixelRatio: meta.devicePixelRatio,
       },
       async (response) => {
+        setButtonProgressState(
+          jiraButton,
+          false,
+          jiraButtonLabel,
+          "Creating Jira Ticket...",
+          true
+        );
         if (chrome.runtime.lastError) {
           jiraStatus.style.color = "#c62828";
           jiraStatus.textContent = chrome.runtime.lastError.message;
