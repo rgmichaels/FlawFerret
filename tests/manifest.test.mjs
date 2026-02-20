@@ -19,10 +19,7 @@ test('manifest keeps required permissions', () => {
 
 test('manifest keeps narrow Jira host permission and avoids global content scripts', () => {
   assert.ok(Array.isArray(manifest.host_permissions));
-  assert.ok(
-    manifest.host_permissions.includes('https://*.atlassian.net/*'),
-    'expected Jira host permission'
-  );
+  assert.deepEqual(manifest.host_permissions, ['https://*.atlassian.net/*']);
   assert.equal(manifest.content_scripts, undefined);
 });
 
