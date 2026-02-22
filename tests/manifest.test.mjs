@@ -11,7 +11,7 @@ test('manifest has expected core metadata', () => {
 });
 
 test('manifest keeps required permissions', () => {
-  const required = ['contextMenus', 'activeTab', 'scripting', 'storage', 'tabs'];
+  const required = ['contextMenus', 'activeTab', 'scripting', 'storage', 'tabCapture', 'offscreen'];
   required.forEach((permission) => {
     assert.ok(manifest.permissions.includes(permission), `missing permission: ${permission}`);
   });
