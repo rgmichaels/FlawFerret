@@ -12,3 +12,11 @@ test('context menu handler performs on-demand content script injection', () => {
   assert.match(source, /chrome\.scripting\.executeScript\(/);
   assert.match(source, /capture-and-copy/);
 });
+
+test('recording flow re-injects content script after tab navigation', () => {
+  assert.match(source, /chrome\.tabs\.onUpdated\.addListener\(/);
+  assert.match(source, /if \(changeInfo\.status !== "complete"\) return;/);
+  assert.match(source, /if \(!recordingState\.recordingActive\) return;/);
+  assert.match(source, /if \(recordingState\.tabId !== tabId\) return;/);
+  assert.match(source, /void injectContentScript\(tabId\);/);
+});

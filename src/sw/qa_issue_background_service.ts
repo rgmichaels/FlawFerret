@@ -36,6 +36,14 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   void handleCaptureFromContextMenu(tab.id);
 });
 
+chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+  if (changeInfo.status !== "complete") return;
+  if (!recordingState.recordingActive) return;
+  if (recordingState.tabId !== tabId) return;
+
+  void injectContentScript(tabId);
+});
+
 async function handleCaptureFromContextMenu(tabId: number): Promise<void> {
   const injected = await injectContentScript(tabId);
   if (!injected.ok) {
