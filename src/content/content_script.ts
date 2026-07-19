@@ -45,6 +45,8 @@ type CaptureResult = {
   };
 };
 
+const FLAWFERRET2_NEW_JOB_URL = "http://localhost:3000/jobs/new";
+
 let lastRightClickedElement: Element | null = null;
 
 document.addEventListener(
@@ -752,6 +754,43 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   jiraLink.style.display = "none";
   jiraLink.target = "_blank";
 
+  const shareActionButton = document.createElement("button");
+  shareActionButton.textContent = "Copy Share Update";
+  shareActionButton.style.padding = "4px 10px";
+  shareActionButton.style.borderRadius = "999px";
+  shareActionButton.style.border = "1px solid #1f1f1f";
+  shareActionButton.style.background = "#ffffff";
+  shareActionButton.style.color = "#1f1f1f";
+  shareActionButton.style.fontSize = "12px";
+  shareActionButton.style.cursor = "pointer";
+  shareActionButton.style.display = "none";
+
+  let createdIssueKey: string | null = null;
+  let createdIssueUrl: string | null = null;
+
+  shareActionButton.addEventListener("click", async () => {
+    if (!createdIssueKey) return;
+    const sharePacket = buildSharePacket({
+      issueKey: createdIssueKey,
+      issueUrl: createdIssueUrl,
+      summary: summaryInput.value.trim(),
+      scenario: textarea.value.trim(),
+    });
+    const copied = await copyTextToClipboard(sharePacket);
+    if (!copied) {
+      jiraStatus.style.color = "#c62828";
+      jiraStatus.textContent = "Could not copy share update";
+      return;
+    }
+    jiraStatus.style.color = "#2e7d32";
+    jiraStatus.textContent = "Share update copied";
+    chrome.runtime.sendMessage({
+      type: "metrics:track",
+      event: "share_packet_copied",
+      issueKey: createdIssueKey,
+    });
+  });
+
   const jiraButton = document.createElement("button");
   jiraButton.textContent = "Create Jira Ticket";
   jiraButton.style.padding = "8px 14px";
@@ -788,6 +827,7 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   jiraStatusWrap.style.justifyContent = "flex-end";
   jiraStatusWrap.style.gap = "6px";
   jiraStatusWrap.appendChild(jiraStatus);
+  jiraStatusWrap.appendChild(shareActionButton);
   jiraStatusWrap.appendChild(jiraLink);
 
   jiraHeader.appendChild(jiraTitle);
@@ -909,6 +949,28 @@ function showOverlay(text: string, meta: OverlayMeta): void {
     showRecordingControls();
   });
 
+  const addPlaywrightTestButton = document.createElement("button");
+  addPlaywrightTestButton.textContent = "Add Playwright Test";
+  addPlaywrightTestButton.style.padding = "10px 18px";
+  addPlaywrightTestButton.style.borderRadius = "12px";
+  addPlaywrightTestButton.style.border = "1px solid #1f1f1f";
+  addPlaywrightTestButton.style.background = "#1f1f1f";
+  addPlaywrightTestButton.style.color = "#ffffff";
+  addPlaywrightTestButton.style.cursor = "pointer";
+  addPlaywrightTestButton.addEventListener("click", () => {
+    const ff2Url = buildFlawFerret2NewJobUrl(meta, textarea.value);
+    const opened = window.open(ff2Url, "_blank", "noopener,noreferrer");
+
+    if (!opened) {
+      jiraStatus.style.color = "#c62828";
+      jiraStatus.textContent = "Allow popups to open FlawFerret2";
+      return;
+    }
+
+    jiraStatus.style.color = "#2e7d32";
+    jiraStatus.textContent = "Opened FlawFerret2";
+  });
+
   body.appendChild(jiraPanel);
   body.appendChild(keywordBar);
   body.appendChild(textarea);
@@ -984,6 +1046,7 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   footer.appendChild(optionsButton);
   footerActions.appendChild(aiButton);
   footerActions.appendChild(recordButton);
+  footerActions.appendChild(addPlaywrightTestButton);
   footerActions.appendChild(jiraButton);
   footer.appendChild(footerActions);
   card.appendChild(header);
@@ -1038,6 +1101,9 @@ function showOverlay(text: string, meta: OverlayMeta): void {
     jiraStatus.style.color = "#4b4b4b";
     jiraStatus.textContent = "Creating ticket...";
     jiraLink.style.display = "none";
+    shareActionButton.style.display = "none";
+    createdIssueKey = null;
+    createdIssueUrl = null;
     setButtonProgressState(
       jiraButton,
       true,
@@ -1080,15 +1146,77 @@ function showOverlay(text: string, meta: OverlayMeta): void {
         }
         jiraStatus.style.color = "#2e7d32";
         jiraStatus.textContent = `Created ${response.key}`;
+        createdIssueKey = response.key;
         const baseUrl = await getJiraBaseUrl();
         if (baseUrl) {
-          jiraLink.href = `${baseUrl}/browse/${response.key}`;
+          createdIssueUrl = `${baseUrl}/browse/${response.key}`;
+          jiraLink.href = createdIssueUrl;
           jiraLink.textContent = "Open";
           jiraLink.style.display = "inline";
+        } else {
+          createdIssueUrl = null;
         }
+        shareActionButton.style.display = "inline-flex";
       }
     );
   });
+}
+
+function buildFlawFerret2NewJobUrl(meta: OverlayMeta, notes: string): string {
+  const url = new URL(FLAWFERRET2_NEW_JOB_URL);
+  url.searchParams.set("captureContext", JSON.stringify(buildFlawFerret2CaptureContext(meta, notes)));
+
+  return url.toString();
+}
+
+function buildFlawFerret2CaptureContext(
+  meta: OverlayMeta,
+  notes: string
+): Record<string, unknown> {
+  const captureContext: Record<string, unknown> = {
+    url: meta.url,
+    title: meta.title,
+    selectedElement: meta.elementKey,
+    elementKey: meta.elementKey,
+    domSnippet: meta.outerHTML,
+    outerHTML: meta.outerHTML,
+    selectors: meta.selectors.map((selector) => selector.selector),
+    locatorCandidates: meta.selectors.map((selector) => ({
+      strategy: selector.kind,
+      value: selector.selector,
+    })),
+    thenLine: meta.thenLine,
+    captureRect: meta.captureRect ?? undefined,
+    viewport: meta.viewport,
+    devicePixelRatio: meta.devicePixelRatio,
+  };
+
+  if (meta.role) {
+    captureContext.role = meta.role;
+    captureContext.accessibleRole = meta.role;
+  }
+
+  if (meta.name) {
+    captureContext.name = meta.name;
+    captureContext.accessibleName = meta.name;
+  }
+
+  if (meta.selectedText) {
+    captureContext.selectedText = meta.selectedText;
+  }
+
+  if (meta.imageName) {
+    captureContext.imageName = meta.imageName;
+  }
+
+  const trimmedNotes = notes.trim();
+  if (trimmedNotes) {
+    captureContext.notes = trimmedNotes;
+  }
+
+  return Object.fromEntries(
+    Object.entries(captureContext).filter(([, value]) => value !== undefined)
+  );
 }
 
 function insertAtCursor(textarea: HTMLTextAreaElement, insertText: string): void {
@@ -1100,6 +1228,55 @@ function insertAtCursor(textarea: HTMLTextAreaElement, insertText: string): void
   const cursor = start + insertText.length;
   textarea.selectionStart = cursor;
   textarea.selectionEnd = cursor;
+}
+
+function buildSharePacket(input: {
+  issueKey: string;
+  issueUrl: string | null;
+  summary: string;
+  scenario: string;
+}): string {
+  const lines = input.scenario
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const reproLines = lines.slice(0, 5);
+
+  return [
+    `Filed with FlawFerret: ${input.issueKey}`,
+    input.issueUrl ? `Jira: ${input.issueUrl}` : `Jira key: ${input.issueKey}`,
+    input.summary ? `Summary: ${input.summary}` : "",
+    "",
+    "Repro context:",
+    ...reproLines,
+    "",
+    "Try FlawFerret: right-click any UI element and choose FlawFerret.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
+async function copyTextToClipboard(text: string): Promise<boolean> {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fall back to execCommand path.
+    }
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  textarea.style.pointerEvents = "none";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  const copied = document.execCommand("copy");
+  textarea.remove();
+  return copied;
 }
 
 async function startTabRecording(): Promise<{ ok: boolean; error?: string }> {

@@ -23,3 +23,16 @@ test('missing Jira project validation uses red error color', () => {
   assert.match(source, /jiraStatus\.style\.color\s*=\s*"#c62828"/);
   assert.match(source, /jiraStatus\.textContent\s*=\s*"Choose Jira project"/);
 });
+
+test('overlay exposes share action after issue creation and tracks it', () => {
+  assert.match(source, /shareActionButton\.textContent\s*=\s*"Copy Share Update"/);
+  assert.match(source, /type:\s*"metrics:track"/);
+  assert.match(source, /event:\s*"share_packet_copied"/);
+});
+
+test('overlay opens FlawFerret2 with captured Playwright context', () => {
+  assert.match(source, /FLAWFERRET2_NEW_JOB_URL\s*=\s*"http:\/\/localhost:3000\/jobs\/new"/);
+  assert.match(source, /addPlaywrightTestButton\.textContent\s*=\s*"Add Playwright Test"/);
+  assert.match(source, /searchParams\.set\("captureContext"/);
+  assert.match(source, /locatorCandidates:\s*meta\.selectors\.map/);
+});
