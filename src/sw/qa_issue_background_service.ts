@@ -164,6 +164,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message?.type === "metrics:track") {
+    void handleMetricsTrack(message).then(sendResponse);
+    return true;
+  }
+
   return false;
 });
 
@@ -656,6 +661,39 @@ async function handleRecordStateGet() {
   } catch {
     return { ok: true, ...recordingState };
   }
+}
+
+async function handleMetricsTrack(message: {
+  event?: string;
+  issueKey?: string;
+}) {
+  const event = (message.event || "").trim();
+  if (!event) {
+    return { ok: false, error: "Missing event." };
+  }
+
+  const stored = (await chrome.storage.local.get("usageMetrics")) as {
+    usageMetrics?: {
+      events?: Record<string, number>;
+      lastTrackedAt?: string;
+      lastIssueKey?: string;
+    };
+  };
+  const current = stored.usageMetrics || {};
+  const currentEvents = current.events || {};
+
+  const next = {
+    ...current,
+    events: {
+      ...currentEvents,
+      [event]: (currentEvents[event] || 0) + 1,
+    },
+    lastTrackedAt: new Date().toISOString(),
+    ...(message.issueKey?.trim() ? { lastIssueKey: message.issueKey.trim() } : {}),
+  };
+
+  await chrome.storage.local.set({ usageMetrics: next });
+  return { ok: true };
 }
 
 async function captureAndCropTab(
