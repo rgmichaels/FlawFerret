@@ -45,7 +45,7 @@ type CaptureResult = {
   };
 };
 
-const FLAWFERRET2_NEW_JOB_URL = "http://localhost:3000/jobs/new";
+const DEFAULT_FLAWFERRET2_BASE_URL = "http://localhost:3000";
 
 let lastRightClickedElement: Element | null = null;
 
@@ -957,8 +957,8 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   addPlaywrightTestButton.style.background = "#1f1f1f";
   addPlaywrightTestButton.style.color = "#ffffff";
   addPlaywrightTestButton.style.cursor = "pointer";
-  addPlaywrightTestButton.addEventListener("click", () => {
-    const ff2Url = buildFlawFerret2NewJobUrl(meta, textarea.value);
+  addPlaywrightTestButton.addEventListener("click", async () => {
+    const ff2Url = await buildFlawFerret2NewJobUrl(meta, textarea.value);
     const opened = window.open(ff2Url, "_blank", "noopener,noreferrer");
 
     if (!opened) {
@@ -1162,11 +1162,31 @@ function showOverlay(text: string, meta: OverlayMeta): void {
   });
 }
 
-function buildFlawFerret2NewJobUrl(meta: OverlayMeta, notes: string): string {
-  const url = new URL(FLAWFERRET2_NEW_JOB_URL);
+async function buildFlawFerret2NewJobUrl(meta: OverlayMeta, notes: string): Promise<string> {
+  const baseUrl = await getFlawFerret2BaseUrl();
+  const url = new URL("/jobs/new", baseUrl);
   url.searchParams.set("captureContext", JSON.stringify(buildFlawFerret2CaptureContext(meta, notes)));
 
   return url.toString();
+}
+
+async function getFlawFerret2BaseUrl(): Promise<string> {
+  const stored = (await chrome.storage.local.get("flawFerret2Config")) as {
+    flawFerret2Config?: {
+      baseUrl?: string;
+    };
+  };
+  const configuredUrl = stored.flawFerret2Config?.baseUrl?.trim();
+
+  if (!configuredUrl) {
+    return DEFAULT_FLAWFERRET2_BASE_URL;
+  }
+
+  try {
+    return new URL(configuredUrl).origin;
+  } catch {
+    return DEFAULT_FLAWFERRET2_BASE_URL;
+  }
 }
 
 function buildFlawFerret2CaptureContext(

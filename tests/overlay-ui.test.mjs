@@ -31,8 +31,10 @@ test('overlay exposes share action after issue creation and tracks it', () => {
 });
 
 test('overlay opens FlawFerret2 with captured Playwright context', () => {
-  assert.match(source, /FLAWFERRET2_NEW_JOB_URL\s*=\s*"http:\/\/localhost:3000\/jobs\/new"/);
+  assert.match(source, /DEFAULT_FLAWFERRET2_BASE_URL\s*=\s*"http:\/\/localhost:3000"/);
   assert.match(source, /addPlaywrightTestButton\.textContent\s*=\s*"Add Playwright Test"/);
+  assert.match(source, /chrome\.storage\.local\.get\("flawFerret2Config"\)/);
+  assert.match(source, /new URL\("\/jobs\/new", baseUrl\)/);
   assert.match(source, /searchParams\.set\("captureContext"/);
   assert.match(source, /locatorCandidates:\s*meta\.selectors\.map/);
 });
